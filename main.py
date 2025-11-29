@@ -63,23 +63,28 @@ kcenter = KCenter(data_tp2, k)
 # não acho que deveria haver a necessidade de passar k aqui
 # tampouco a seed (opcional)
 # isso deveria ser gerenciado pela classe KCenter
-method = KCenterGonzalez(k)
+method_name = 'gonzalez'
+
+if method_name == 'gonzalez':
+    method = KCenterGonzalez(k, 42)
+elif method_name == 'greedy':
+    method = KCenterGreedy(k, 42)
 
 
 
 print("\n" + "="*50)
-print("INICIANDO EXECUÇÃO DO ALGORITMO DE GONZALEZ (TP2)")
+print(f"INICIANDO EXECUÇÃO DO ALGORITMO ({method_name.capitalize()}) (TP2)")
 print("="*50)
 
 
-print(f"Executando Gonzalez para k={kcenter.k}...")
+print(f"Executando para k={kcenter.k} ({method_name.capitalize()})...")
 centros_idx, raio, labels = kcenter.fit(method)
 
 print(f"-> Raio Final (Custo): {raio:.4f}")
 print(f"-> Índices dos Centros Escolhidos: {centros_idx}")
 print(f"-> Coordenadas dos Centros:\n{data_tp2[centros_idx]}")
 
-# plotar Resultado do Gonzalez
+# plotar Resultado da execução
 plt.figure(figsize=(8, 6))
 
 # plota todos os pontos em cinza
@@ -87,7 +92,7 @@ plt.scatter(data_tp2[:, 0], data_tp2[:, 1], c='gray', alpha=0.6, label='Pontos')
 
 # plota os centros escolhidos em vermelho 
 centros_coords = data_tp2[centros_idx]
-plt.scatter(centros_coords[:, 0], centros_coords[:, 1], c='red', s=200, marker='*', label='Centros (Gonzalez)')
+plt.scatter(centros_coords[:, 0], centros_coords[:, 1], c='red', s=200, marker='*', label=f'Centros ({method_name.capitalize()})')
 
 # desenha círculos representando o raio de cobertura 
 ax = plt.gca()
@@ -95,7 +100,7 @@ for center in centros_coords:
     circle = plt.Circle((center[0], center[1]), raio, color='red', fill=False, linestyle='--', alpha=0.3)
     ax.add_patch(circle)
 
-plt.title(f'Resultado Gonzalez (k={k}) - Raio: {raio:.4f}')
+plt.title(f'Resultado {method_name.capitalize()} (k={k}) - Raio: {raio:.4f}')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.legend()

@@ -73,3 +73,59 @@ class KCenterGonzalez:
 
     def get_metrics_data(self):
         return self.labels
+
+
+class KCenterGreedy:
+    """
+    Implementação do Algoritmo Guloso (Farthest-First Traversal) para o problema k-center.
+    
+    Este é um algoritmo 2-aproximado que seleciona iterativamente o ponto 
+    mais distante dos centros já escolhidos.
+    """
+
+    def __init__(self, k, random_seed=None):
+        self.k = k
+        self.centers_indices = []
+        self.radius = 0.0
+        self.labels = []
+        
+        if random_seed is not None:
+            random.seed(random_seed)
+            np.random.seed(random_seed)
+
+    def fit(self, distance_matrix):
+        """
+        Executa o algoritmo guloso usando matriz de distâncias pré-calculada.
+        """
+        n_samples = distance_matrix.shape[0]
+        
+        if self.k > n_samples:
+            raise ValueError(f"k={self.k} maior que número de pontos n={n_samples}")
+
+        # Escolhe primeiro centro aleatoriamente
+        first_center = random.randint(0, n_samples - 1)
+        self.centers_indices = [first_center]
+        
+        # Inicializa distâncias mínimas ao conjunto de centros
+        min_dists = distance_matrix[first_center, :].copy()
+        
+        # Seleciona os k-1 centros restantes
+        for _ in range(1, self.k):
+            # Critério guloso: ponto mais distante dos centros atuais
+            next_center = np.argmax(min_dists)
+            self.centers_indices.append(next_center)
+            
+            # Atualiza distâncias mínimas
+            current_dists = distance_matrix[next_center, :]
+            min_dists = np.minimum(min_dists, current_dists)
+
+        # Calcula raio final e atribuições
+        self.radius = np.max(min_dists)
+        
+        dist_to_centers = distance_matrix[:, self.centers_indices]
+        self.labels = np.argmin(dist_to_centers, axis=1)
+        
+        return self.centers_indices, self.radius
+
+    def get_metrics_data(self):
+        return self.labels

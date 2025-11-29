@@ -3,28 +3,77 @@ import numpy as np
 import sys
 from src.distances import calculate_minkowski_matrix
 from src.algorithms import KCenterGonzalez, KCenterGreedy
+from typing import Union
+
+class KCenter:
+    def __init__(self, data_tp2, k):
+        self.data_tp2 = data_tp2
+        self.k = k
+        self.distance_matrix = None
+
+    def fit(self, method_instance):
+        """
+        Executa o algoritmo k-center usando uma instância do método já criada.
+        
+        Args:
+            method_instance: Instância já criada do algoritmo (ex: KCenterGreedy(k=5))
+            
+        Returns:
+            tuple: (centers_indices, radius, labels)
+        """
+        if self.distance_matrix is None:
+            self._compute_distance_matrix()
+        
+        # Usa a instância do método passada como parâmetro
+        centers_indices, radius = method_instance.fit(self.distance_matrix)
+        
+        return centers_indices, radius, method_instance.labels
+
+    
+    def _compute_distance_matrix(self, metric: str = 'euclidean'):
+        """
+        Calcula a matriz de distância entre todos os pares de pontos.
+        """
+        n_samples = self.data_tp2.shape[0]
+        self.distance_matrix = np.zeros((n_samples, n_samples))
+        
+        for i in range(n_samples):
+            for j in range(i + 1, n_samples):
+                if metric == 'euclidean':
+                    dist = np.sqrt(np.sum((self.data_tp2[i] - self.data_tp2[j]) ** 2))
+                elif metric == 'manhattan':
+                    dist = np.sum(np.abs(self.data_tp2[i] - self.data_tp2[j]))
+                # Adicionar outras métricas aqui
+                # possíelmente distinguir apenas entre mink. e mahal.
+                
+                self.distance_matrix[i, j] = dist
+                self.distance_matrix[j, i] = dist
+    
 
 POINT_AMOUNT = 100
-
+k = 3
 # Gerar 100 pontos aleatórios
-np.random.seed(2)  # Para resultados reproduzíveis
+np.random.seed(42)  # Para resultados reproduzíveis
 x = np.random.rand(POINT_AMOUNT)
 y = np.random.rand(POINT_AMOUNT)
+
+data_tp2 = np.column_stack((x, y))
+kcenter = KCenter(data_tp2, k)
+
+# não acho que deveria haver a necessidade de passar k aqui
+# tampouco a seed (opcional)
+# isso deveria ser gerenciado pela classe KCenter
+method = KCenterGonzalez(k)
+
+
 
 print("\n" + "="*50)
 print("INICIANDO EXECUÇÃO DO ALGORITMO DE GONZALEZ (TP2)")
 print("="*50)
 
-data_tp2 = np.column_stack((x, y))
 
-print("Calculando matriz de distâncias (Euclidiana)...")
-dist_matrix = calculate_minkowski_matrix(data_tp2, data_tp2, p=2) 
-
-k_gonzalez = 3  
-print(f"Executando Gonzalez para k={k_gonzalez}...")
-
-gonzalez_algo = KCenterGonzalez(k=k_gonzalez, random_seed=42)
-centros_idx, raio = gonzalez_algo.fit(dist_matrix)
+print(f"Executando Gonzalez para k={kcenter.k}...")
+centros_idx, raio, labels = kcenter.fit(method)
 
 print(f"-> Raio Final (Custo): {raio:.4f}")
 print(f"-> Índices dos Centros Escolhidos: {centros_idx}")
@@ -46,7 +95,7 @@ for center in centros_coords:
     circle = plt.Circle((center[0], center[1]), raio, color='red', fill=False, linestyle='--', alpha=0.3)
     ax.add_patch(circle)
 
-plt.title(f'Resultado Gonzalez (k={k_gonzalez}) - Raio: {raio:.4f}')
+plt.title(f'Resultado Gonzalez (k={k}) - Raio: {raio:.4f}')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.legend()
@@ -55,5 +104,3 @@ plt.grid(True, alpha=0.3)
 print("Exibindo gráfico Gonzalez (TP2)...")
 plt.show()
 plt.savefig('image.svg')
-
-

@@ -75,57 +75,71 @@ class KCenterGonzalez:
         return self.labels
 
 
-class KCenterGreedy:
+class KCenterRefinement:
     """
-    Implementação do Algoritmo Guloso (Farthest-First Traversal) para o problema k-center.
+    Algoritmo de refinamento de intervalos para k-center
+    """
     
-    Este é um algoritmo 2-aproximado que seleciona iterativamente o ponto 
-    mais distante dos centros já escolhidos.
-    """
-
-    def __init__(self, k, random_seed=None):
+    def __init__(self, k, width_ratio=0.1):
         self.k = k
+        self.width_ratio = width_ratio  # ε como porcentagem da largura inicial
         self.centers_indices = []
         self.radius = 0.0
         self.labels = []
-        
-        if random_seed is not None:
-            random.seed(random_seed)
-            np.random.seed(random_seed)
-
+    
     def fit(self, distance_matrix):
-        """
-        Executa o algoritmo guloso usando matriz de distâncias pré-calculada.
-        """
         n_samples = distance_matrix.shape[0]
         
-        if self.k > n_samples:
-            raise ValueError(f"k={self.k} maior que número de pontos n={n_samples}")
-
-        # Escolhe primeiro centro aleatoriamente
-        first_center = random.randint(0, n_samples - 1)
-        self.centers_indices = [first_center]
+        # 1. Encontrar intervalo inicial [min_dist, max_dist]
+        non_zero_dists = distance_matrix[np.triu_indices(n_samples, k=1)]
+        L = np.min(non_zero_dists)  # min_dist
+        U = np.max(distance_matrix) # max_dist
         
-        # Inicializa distâncias mínimas ao conjunto de centros
-        min_dists = distance_matrix[first_center, :].copy()
+        target_width = self.width_ratio * (U - L)
+        best_centers = None
+        best_radius = float('inf')
         
-        # Seleciona os k-1 centros restantes
-        for _ in range(1, self.k):
-            # Critério guloso: ponto mais distante dos centros atuais
-            next_center = np.argmax(min_dists)
-            self.centers_indices.append(next_center)
+        # 2. Refinamento do intervalo
+        while (U - L) > target_width:
+            r = (L + U) / 2
             
-            # Atualiza distâncias mínimas
-            current_dists = distance_matrix[next_center, :]
-            min_dists = np.minimum(min_dists, current_dists)
-
-        # Calcula raio final e atribuições
-        self.radius = np.max(min_dists)
+            # Verificar se existe solução com raio ≤ 2r
+            centers = self._can_cover_with_radius(distance_matrix, r, self.k)
+            
+            if centers is not None:
+                # Solução encontrada: raio pode ser menor
+                U = r
+                best_centers = centers
+                best_radius = r
+            else:
+                # Não há solução: raio precisa ser maior
+                L = r
         
+        self.centers_indices = best_centers
+        self.radius = best_radius
+        
+        # Atribuir labels
         dist_to_centers = distance_matrix[:, self.centers_indices]
         self.labels = np.argmin(dist_to_centers, axis=1)
         
         return self.centers_indices, self.radius
-
-    def get_metrics_data(self):
-        return self.labels
+    
+    def _can_cover_with_radius(self, distance_matrix, r, k):
+        """
+        Verifica se é possível cobrir todos os pontos com k centros e raio r
+        usando algoritmo guloso de cobertura
+        """
+        n_samples = distance_matrix.shape[0]
+        uncovered = set(range(n_samples))
+        centers = []
+        
+        while len(centers) < k and uncovered:
+            # Escolher ponto não coberto como novo centro
+            center = next(iter(uncovered))
+            centers.append(center)
+            
+            # Remover pontos cobertos por este centro (dentro do raio 2r)
+            covered = {i for i in uncovered if distance_matrix[center, i] <= 2*r}
+            uncovered -= covered
+        
+        return centers if not uncovered else None

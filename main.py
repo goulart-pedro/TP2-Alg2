@@ -1,36 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-from src.distances import calculate_minkowski_matrix
+from src.distances import Metric, calculate_minkowski_matrix
 from src.algorithms import KCenterGonzalez, KCenterRefinement
 from typing import Union
 
-class Metric:
-    """Classe para cálculo de métricas de distância entre pontos."""
-    
-    @staticmethod
-    def euclidean(x, y):
-        return np.sqrt(np.sum((x - y) ** 2))
-    
-    @staticmethod
-    def manhattan(x, y):
-        return np.sum(np.abs(x - y))
-    
-    @staticmethod
-    def minkowski(x, y, p=2):
-        return np.sum(np.abs(x - y) ** p) ** (1/p)
-    
-    @staticmethod
-    def get_distance_function(metric):
-        """Retorna a função de distância apropriada."""
-        if metric == 'euclidean':
-            return Metric.euclidean
-        elif metric == 'manhattan':
-            return Metric.manhattan
-        elif metric == 'minkowski':
-            return Metric.minkowski
-        else:
-            raise ValueError(f"Métrica não suportada: {metric}")
 
 class KCenter:
     def __init__(self, data_tp2, k, metric='euclidean'):
@@ -95,13 +69,19 @@ class KCenter:
         n_samples = self.data_tp2.shape[0]
         self.distance_matrix = np.zeros((n_samples, n_samples))
         distance_func = Metric.get_distance_function(metric)
-        
+
+
+        # utiliza uma das funções de distância em dois pontos
         for i in range(n_samples):
             for j in range(i + 1, n_samples):
                 dist = distance_func(self.data_tp2[i], self.data_tp2[j])
                 self.distance_matrix[i, j] = dist
                 self.distance_matrix[j, i] = dist
 
+        pass
+
+    
+                
 POINT_AMOUNT = 100
 k = 3
 # Gerar 100 pontos aleatórios

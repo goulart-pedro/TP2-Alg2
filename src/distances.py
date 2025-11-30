@@ -1,5 +1,36 @@
 import numpy as np
 
+
+class Metric:
+    """Classe para cálculo de métricas de distância entre pontos."""
+    
+    @staticmethod
+    def euclidean(x, y):
+        return np.sqrt(np.sum((x - y) ** 2))
+    
+    @staticmethod
+    def manhattan(x, y):
+        return np.sum(np.abs(x - y))
+    
+    @staticmethod
+    def minkowski(x, y, p=2):
+        return np.sum(np.abs(x - y) ** p) ** (1/p)
+    
+    @staticmethod
+    def get_distance_function(metric):
+        """Retorna a função de distância apropriada."""
+        if metric == 'euclidean':
+            return Metric.euclidean
+        elif metric == 'manhattan':
+            return Metric.manhattan
+        elif metric == 'minkowski':
+            return Metric.minkowski
+        else:
+            raise ValueError(f"Métrica não suportada: {metric}")
+
+
+    pass
+
 def calculate_minkowski_matrix(X, Y, p=2):
     """
     A distancia de Minkowski é definida como:

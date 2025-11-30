@@ -42,50 +42,20 @@ def calculate_minkowski_matrix(X, Y, p=2):
 
 def calculate_mahalanobis_matrix(X, Y, VI):
     """
-    Calcula a matriz de distâncias de Mahalanobis.
-    
-    A distância é definida como: D(x, y) = sqrt( (x-y)^T * VI * (x-y) )
-    Onde VI é a matriz de covariância inversa.
-    
-        X (np.ndarray): Matriz de pontos (N, d).
-        Y (np.ndarray): Matriz de centros/pontos (M, d).
-        VI (np.ndarray): Matriz de covariância inversa (d, d).
-        
-    Retorno:
-        np.ndarray: Matriz de distâncias (N, M).
+    Calcula matriz Mahalanobis com proteção numérica.
     """
-    # dimensões
     n_samples, n_features = X.shape
     n_centers = Y.shape[0]
 
-    # calcula a diferença entre cada par de pontos (x - y)
-    # Resultado shape: (N, M, d)
-    delta = X[:, np.newaxis, :] - Y[np.newaxis, :, :]
-    
-    # Para vetorizar a multiplicação matricial (delta * VI * delta^T) de forma eficiente:
-    # A fórmula é: soma_sobre_dims( (delta . VI) * delta )
-    
-    # Redimensionar para 2D temporariamente para usar álgebra linear padrão
-    # Transformamos (N, M, d) -> (N*M, d)
+    delta = X[:, np.newaxis, :] - Y[np.newaxis, :, :] # (N, M, d)
     delta_flat = delta.reshape(-1, n_features)
     
-    # (x-y)^T * VI
-    # equivalente a multiplicar delta_flat por VI
-    # Shape: (N*M, d) @ (d, d) -> (N*M, d)
     term1 = np.dot(delta_flat, VI)
-    
-    # Multiplicar pelo vetor delta original e somar
-    # Multiplicação elemento a elemento seguida de soma corresponde ao produto escalar final
-    # (x-y)^T * VI * (x-y)
     dist_sq_flat = np.sum(term1 * delta_flat, axis=1)
     
-    # redimensionar de volta para a matriz de distâncias (N, M)
     dist_sq = dist_sq_flat.reshape(n_samples, n_centers)
     
-    # tratamento de erros numéricos
-    dist_sq = np.maximum(dist_sq, 0.0)
-    
-    return np.sqrt(dist_sq)
+    return np.sqrt(np.maximum(dist_sq, 0.0))
 
 
 def get_covariance_inverse(data):

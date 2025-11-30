@@ -67,9 +67,7 @@ class KCenterRefined:
         self.labels = []
     
     def fit(self, distance_matrix):
-        """
-        Executa a Busca Binária no raio.
-        """
+        #Executa a busca binária no raio.
         n_samples = distance_matrix.shape[0]
         
         # Intervalo de busca [0, max_dist]
@@ -87,17 +85,16 @@ class KCenterRefined:
             
             if centers is not None:
                 best_centers = centers
-                high = mid # Tenta raio menor
+                high = mid 
             else:
-                low = mid # Precisa de raio maior
+                low = mid 
         
-        # Fallback
         if not best_centers:
             best_centers = list(range(self.k))
 
         self.centers_indices = best_centers
         
-        # Calcular raio real final
+        # calcular raio real final
         dist_to_centers = distance_matrix[:, self.centers_indices]
         self.labels = np.argmin(dist_to_centers, axis=1)
         self.radius = np.max(np.min(dist_to_centers, axis=1))
@@ -105,9 +102,9 @@ class KCenterRefined:
         return self.centers_indices, self.radius
     
     def _can_cover(self, distance_matrix, r):
-        """
-        Verifica cobertura gulosa com raio r.
-        """
+        
+        #verifica cobertura gulosa com raio r.
+        
         n_samples = distance_matrix.shape[0]
         uncovered = set(range(n_samples))
         centers = []
@@ -116,7 +113,7 @@ class KCenterRefined:
             u = next(iter(uncovered))
             centers.append(u)
             
-            # Remove pontos cobertos por 2*r
+            # remove pontos cobertos por 2*r
             covered_indices = np.where(distance_matrix[u, :] <= 2 * r)[0]
             uncovered.difference_update(covered_indices)
         

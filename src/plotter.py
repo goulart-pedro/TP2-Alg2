@@ -5,10 +5,7 @@ import os
 import re
 
 def gerar_graficos_e_tabelas(csv_file="relatorio_final_tp2.csv"):
-    """
-    Lê o CSV gerado e cria gráficos de análise.
-    """
-    # 1. Verificação de segurança (Impede o erro FileNotFoundError)
+
     if not os.path.exists(csv_file):
         print(f"\n[ERRO] O arquivo '{csv_file}' não foi encontrado!")
         print("-> Por favor, execute a OPÇÃO 2 (Rodar Experimentos) primeiro para gerar os dados.")
@@ -21,7 +18,6 @@ def gerar_graficos_e_tabelas(csv_file="relatorio_final_tp2.csv"):
         print(f"Erro ao abrir o CSV: {e}")
         return
     
-    # Configuração visual
     sns.set_theme(style="whitegrid")
     plt.rcParams.update({'font.size': 11})
 
@@ -29,12 +25,11 @@ def gerar_graficos_e_tabelas(csv_file="relatorio_final_tp2.csv"):
     if 'Silhueta' in df.columns:
         df = df[df['Silhueta'] > -1]
 
-    # --- GRÁFICO 1: Impacto da Elongação ---
+    # Impacto da Elongação
     print("Gerando 'grafico_elongacao.png'...")
     try:
         elon_df = df[df['Dataset'].str.contains("Syn_Elon", na=False)].copy()
         if not elon_df.empty:
-            # Correção do SyntaxWarning: Usando r'' (raw string)
             elon_df.loc[:, 'Nivel'] = elon_df['Dataset'].str.extract(r'(\d+)').astype(int)
             
             plt.figure(figsize=(10, 6))
@@ -52,7 +47,7 @@ def gerar_graficos_e_tabelas(csv_file="relatorio_final_tp2.csv"):
     except Exception as e:
         print(f"Aviso: erro no gráfico de elongação ({e})")
 
-    # --- GRÁFICO 2: Comparação de Raio (UCI) ---
+    # Comparação de Raio (UCI)
     print("Gerando 'grafico_raio_uci.png'...")
     try:
         uci_df = df[(df['Dataset'].str.contains("UCI", na=False)) & (df['Distancia'] == 'Euclidiana')].copy()
@@ -76,7 +71,6 @@ def gerar_graficos_e_tabelas(csv_file="relatorio_final_tp2.csv"):
 
             if rows:
                 df_norm = pd.DataFrame(rows)
-                # Filtrar para limpar o gráfico
                 df_norm = df_norm[df_norm['Parametro'].isin(['15_Runs_Avg', 'Width_1%'])]
                 
                 plt.figure(figsize=(12, 6))
@@ -90,7 +84,6 @@ def gerar_graficos_e_tabelas(csv_file="relatorio_final_tp2.csv"):
     except Exception as e:
         print(f"Aviso: erro no gráfico de raio ({e})")
 
-    # --- TABELA RESUMO ---
     print("\n--- TABELA RESUMO (Médias por Algoritmo nos Reais) ---")
     try:
         uci_only = df[df['Dataset'].str.contains("UCI", na=False)]

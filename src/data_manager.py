@@ -4,94 +4,90 @@ from sklearn.datasets import fetch_openml, make_moons, make_circles, make_blobs
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.impute import SimpleImputer
 
-MAX_SAMPLES = 900  
-MIN_SAMPLES = 700  
+MIN_SAMPLES = 700 
+MAX_SAMPLES = 1000 
 
 def safe_load_openml(dataset_id, name, mode):
-    """
-    Função blindada para carregar e limpar datasets da UCI.
-    """
     try:
-        print(f"  -> Baixando {name}...", end=" ")
-        X_raw, y_raw = fetch_openml(data_id=dataset_id, as_frame=True, return_X_y=True, parser='auto')
+        print(f"  -> Baixando {name} (ID {dataset_id})...", end=" ")
         
-        if isinstance(y_raw, pd.DataFrame):
+        try:
+            X_raw, y_raw = fetch_openml(data_id=dataset_id, as_frame=True, return_X_y=True, parser='auto')
+        except Exception as e:
+            print(f"Falha download: {e}")
+            return None
+
+        if X_raw is None or y_raw is None:
+            print("Dados vazios.")
+            return None
+
+        # tratamento do target (y)
+        if isinstance(y_raw, pd.DataFrame): 
             y_raw = y_raw.iloc[:, 0]
-        
-        # erros viram NaN
+            
         y_numeric = pd.to_numeric(y_raw, errors='coerce')
         
-        # Lógica de Binning 
-        num_unique = y_raw.nunique()
-        
-        if mode == 'regr' or num_unique > 20:
+        # lógica de binning
+        if mode == 'regr' or y_raw.nunique() > 20:
             valid_idx = ~y_numeric.isna()
-            X_raw = X_raw[valid_idx]
-            y_numeric = y_numeric[valid_idx]
+            X_raw = X_raw.loc[valid_idx]
+            y_numeric = y_numeric.loc[valid_idx]
             
             try:
                 y = pd.qcut(y_numeric, q=3, labels=False, duplicates='drop').astype(int)
             except:
-                median = y_numeric.median()
-                y = (y_numeric > median).astype(int)
+                y = (y_numeric > y_numeric.median()).astype(int)
         else:
             valid_idx = ~y_raw.isna()
-            X_raw = X_raw[valid_idx]
-            y_raw = y_raw[valid_idx]
-            
+            X_raw = X_raw.loc[valid_idx]
+            y_raw = y_raw.loc[valid_idx]
             le = LabelEncoder()
-            y = le.fit_transform(y_raw)
+            y = le.fit_transform(y_raw.astype(str))
 
-        k = len(np.unique(y))
-        
+        # tratamento das features (X)
         X_df = X_raw.apply(pd.to_numeric, errors='coerce')
-        
-        # Drop colunas que ficaram inteiramente vazias 
         X_df = X_df.dropna(axis=1, how='all')
         
-        # Preenche NaNs restantes com a média
         imputer = SimpleImputer(strategy='mean')
         X = imputer.fit_transform(X_df)
         
-        # filtro
         if len(X) < MIN_SAMPLES:
-            print(f"Ignorado (Muito pequeno: {len(X)}).")
+            print(f"Ignorado ({len(X)} < {MIN_SAMPLES}).")
             return None
 
+        #para não travar
         if len(X) > MAX_SAMPLES:
             indices = np.random.choice(len(X), MAX_SAMPLES, replace=False)
             X = X[indices]
             y = y[indices]
+            
+        k = len(np.unique(y))
+        if k < 2: k = 2
         
-      
-        if k >= len(X):
-            y = np.random.randint(0, 3, size=len(X)) # Classes dummy
-            k = 3
-        
-        # normalização
+        # normaliza
         X = StandardScaler().fit_transform(X)
         
         print(f"OK (k={k}, n={len(X)}).")
         return {'name': name, 'type': 'real', 'X': X, 'y_true': y, 'k': k}
 
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"Erro ao processar: {e}")
         return None
 
 def get_real_datasets():
-    print(f"Carregando datasets reais (Max {MAX_SAMPLES} linhas)...")
+    print(f"Carregando datasets reais (Garantidos > 700)...")
     
     configs = [
-        {'id': 4353,  'name': 'UCI_Concrete',         'mode': 'regr'}, 
-        {'id': 1473,  'name': 'UCI_Energy',           'mode': 'regr'}, 
-        {'id': 43926, 'name': 'UCI_Cervical_Cancer',  'mode': 'regr'}, 
-        {'id': 1510,  'name': 'UCI_Vehicle',          'mode': 'class'},
-        {'id': 37,    'name': 'UCI_Diabetes',         'mode': 'class'},
-        {'id': 1464,  'name': 'UCI_Blood_Transfus',   'mode': 'class'},
-        {'id': 1444,  'name': 'UCI_Annealing',        'mode': 'class'},
-        {'id': 310,   'name': 'UCI_Mammographic',     'mode': 'class'},
-        {'id': 1494,  'name': 'UCI_QSAR',             'mode': 'class'}, 
-        {'id': 60,    'name': 'UCI_Waveform',         'mode': 'class'},
+        {'id': 1464,  'name': 'UCI_Blood_Transfus',   'mode': 'class'}, # 748
+        {'id': 37,    'name': 'UCI_Diabetes',         'mode': 'class'}, # 768
+        {'id': 1444,  'name': 'UCI_Annealing',        'mode': 'class'}, # 798
+        {'id': 310,   'name': 'UCI_Mammographic',     'mode': 'class'}, # 961
+        {'id': 31,    'name': 'UCI_German_Credit',    'mode': 'class'}, # 1000
+        {'id': 1494,  'name': 'UCI_QSAR',             'mode': 'class'}, # 1055
+        {'id': 1462,  'name': 'UCI_Banknote',         'mode': 'class'}, # 1372
+        {'id': 1504,  'name': 'UCI_Steel_Plates',     'mode': 'class'}, # 1941 
+        {'id': 36,    'name': 'UCI_Segment',          'mode': 'class'}, # 2310 
+        {'id': 44,    'name': 'UCI_Spambase',         'mode': 'class'}, # 4601 
     ]
 
     results = []
@@ -102,7 +98,7 @@ def get_real_datasets():
             
     return results
 
-#sinteticos
+# sinteticos
 def get_synthetic_sklearn_shapes(n_samples=750):
     datasets = []
     print("\nGerando 30 datasets sintéticos (Shapes)...")
@@ -120,7 +116,7 @@ def get_synthetic_sklearn_shapes(n_samples=750):
         X, y = make_blobs(n_samples=n_samples, centers=3, cluster_std=[1.0, 2.5, 0.5], random_state=s)
         datasets.append({'name': f"Syn_Var_{i}", 'type': 'syn', 'X': X, 'y_true': y, 'k': 3})
         X = np.random.rand(n_samples, 2); y = np.zeros(n_samples, int)
-        datasets.append({'name': f"Syn_Rand_{i}", 'type': 'syn', 'X': X, 'y_true': y, 'k': 3}) # k=3 forçado
+        datasets.append({'name': f"Syn_Rand_{i}", 'type': 'syn', 'X': X, 'y_true': y, 'k': 3})
     return datasets
 
 def get_synthetic_multivariate(n_samples=750):

@@ -18,7 +18,7 @@ class ExperimentRunner:
             'Dataset': dataset,
             'Algoritmo': algo,
             'Distancia': metric,
-            'Parametro': param,  # Ex: "Largura=1%" ou "Seed=Media"
+            'Parametro': param,  
             'Raio_Mean': round(radius_mean, 4),
             'Raio_Std': round(radius_std, 4),
             'Tempo_Mean': round(time_mean, 6),
@@ -26,21 +26,16 @@ class ExperimentRunner:
             'Silhueta': round(sil_mean, 4)
         }
         self.results.append(entry)
-        # Salva parcial a cada iteração para não perder dados se travar
+        # salva parcial a cada iteração para não perder dados se travar
         pd.DataFrame(self.results).to_csv(self.output_file, index=False)
 
     def run_benchmark(self, dataset_name, X, y_true, k):
-        """
-        Roda a bateria completa de testes para um dataset específico.
-        """
-        # definir as configurações de distância a testar
-        # Lista de tuplas: (Nome, Função que recebe X e retorna Matriz D)
+        
         dist_configs = [
             ('Manhattan', lambda d: calculate_minkowski_matrix(d, d, p=1)),
             ('Euclidiana', lambda d: calculate_minkowski_matrix(d, d, p=2))
         ]
 
-        # Tenta adicionar Mahalanobis (pode falhar se matriz for singular demais)
         try:
             VI = get_covariance_inverse(X)
             dist_configs.append(('Mahalanobis', lambda d: calculate_mahalanobis_matrix(d, d, VI)))
@@ -48,7 +43,6 @@ class ExperimentRunner:
             print(f"  [Aviso] Mahalanobis pulado para {dataset_name}: {e}")
 
         for dist_name, dist_func in dist_configs:
-            # O PDF exige: calcular matriz UMA VEZ
             start_t = time.time()
             D = dist_func(X)
             mat_time = time.time() - start_t
@@ -57,27 +51,25 @@ class ExperimentRunner:
             raios, tempos, aris, sils = [], [], [], []
             
             for i in range(15):
-                # Seed varia de 0 a 14
                 model = KCenterGonzalez(k, random_seed=i)
                 
                 t0 = time.time()
-                _, r = model.fit(D) # Fit usando a matriz pré-calculada
+                _, r = model.fit(D) 
                 tf = time.time()
                 
                 raios.append(r)
-                tempos.append(tf - t0) # Não somamos mat_time aqui pois a matriz é input
+                tempos.append(tf - t0) 
                 
-                # Métricas de Qualidade
+                # métricas de qualidade
                 aris.append(adjusted_rand_score(y_true, model.labels))
                 try:
-                    # Silhueta pode falhar se k=1 ou labels unicos
+                    # silhueta pode falhar se k=1 ou labels unicos
                     if len(set(model.labels)) > 1:
                         sils.append(silhouette_score(X, model.labels))
                     else:
                         sils.append(-1)
                 except: sils.append(-1)
 
-            # Loga a média das 15 execuções
             self._log(dataset_name, 'Gonzalez', dist_name, '15_Runs_Avg', 
                       np.mean(raios), np.std(raios), np.mean(tempos), 
                       np.mean(aris), np.mean(sils))
@@ -104,7 +96,6 @@ class ExperimentRunner:
                           r, 0.0, tf - t0, ari, sil)
 
         # k-means
-        # K-Means usa Euclidiana por padrão. Rodamos fora do loop de distâncias.
         km = KMeans(n_clusters=k, n_init=10, random_state=42)
         
         t0 = time.time()

@@ -1,10 +1,8 @@
 import numpy as np
 import random
 
+#gonzalez
 class KCenterGonzalez:
-    """
-    Implementação do Algoritmo Guloso (Gonzalez) para o problema k-center.
-    """
 
     def __init__(self, k, random_seed=None):
         self.k = k
@@ -17,35 +15,27 @@ class KCenterGonzalez:
             np.random.seed(random_seed)
 
     def fit(self, distance_matrix):
-        """
-        Executa o algoritmo Gonzalez (GULOSO).
-        """
         n_samples = distance_matrix.shape[0]
         
         if self.k > n_samples:
             raise ValueError(f"k={self.k} é maior que o número de pontos.")
 
-        # 1. Escolhe o primeiro centro aleatoriamente
+        # escolhe o primeiro aleatoriamente
         first_center = random.randint(0, n_samples - 1)
         self.centers_indices = [first_center]
         
-        # Inicializa distâncias mínimas
         min_dists = distance_matrix[first_center, :].copy()
         
-        # 2. Escolhe os demais k-1 centros (Lógica Gulosa)
         for _ in range(1, self.k):
-            # O critério guloso: escolher o ponto mais distante dos centros atuais
             next_center = np.argmax(min_dists)
             self.centers_indices.append(next_center)
-            
-            # Atualizar as distâncias mínimas
+        
             min_dists = np.minimum(min_dists, distance_matrix[next_center, :])
 
-        # 3. Recalcular Raio e Labels
+        # recalcular raio e labels
         dist_to_centers = distance_matrix[:, self.centers_indices]
         self.labels = np.argmin(dist_to_centers, axis=1)
         
-        # O raio é a distância máxima do ponto ao seu centro
         self.radius = np.max(np.min(dist_to_centers, axis=1))
         
         return self.centers_indices, self.radius
@@ -53,11 +43,9 @@ class KCenterGonzalez:
     def get_metrics_data(self):
         return self.labels
 
+#refinement
 
 class KCenterRefined:  
-    """
-    Algoritmo de refinamento de intervalos para k-center (Busca Binária).
-    """
     
     def __init__(self, k, min_width=0.01):
         self.k = k

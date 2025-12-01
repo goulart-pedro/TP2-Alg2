@@ -17,14 +17,11 @@ def calculate_minkowski_matrix(X, Y, p=2):
         raise ValueError(f"Dimensões incompatíveis: X tem {X.shape[1]} dims, Y tem {Y.shape[1]} dims.")
 
     # criaçao das diferenças usando Broadcasting
-    # X[:, np.newaxis, :] transforma X de (N, d) para (N, 1, d)
-    # Y[np.newaxis, :, :] transforma Y de (M, d) para (1, M, d)
-    # A subtração resulta em um tensor de forma (N, M, d) contendo x_i - y_j para cada coordenada.
     diff = X[:, np.newaxis, :] - Y[np.newaxis, :, :]
     
     abs_diff = np.abs(diff)
     
-    # 3. distância baseada em p
+    # distância baseada em p
     if p == 1:
         # Manhattan: soma das diferenças absolutas
         # sumariza ao longo do eixo das dimensões (axis=2)
@@ -79,7 +76,6 @@ def get_covariance_inverse(data):
     try:
         vi = np.linalg.inv(cov_matrix)
     except np.linalg.LinAlgError:
-        # Se a matriz for singular (determinante 0), usamos a pseudo-inversa de Moore-Penrose
         print("Aviso: Matriz de covariância singular. Usando pseudo-inversa.")
         vi = np.linalg.pinv(cov_matrix)
         

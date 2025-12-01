@@ -7,5 +7,10 @@ source .venv/bin/activate
 Nota: Substitua 'source' pelo comando apropriado para o sistema
 
 ## Dependências
-`pip3 install numpy scipy`
+``` shell 
+pip3 install numpy scipy scikit-learn pandas matplotlib seaborn
+```
+
+## Execução
+Simplesmente execute o arquivo main.py e selecione uma das opções impressas
 

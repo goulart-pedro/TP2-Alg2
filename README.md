@@ -8,7 +8,7 @@ Nota: Substitua 'source' pelo comando apropriado para o sistema
 
 ## Dependências
 ``` shell 
-pip3 install numpy scipy scikit-learn pandas matplotlib
+pip3 install numpy scipy scikit-learn pandas matplotlib seaborn
 ```
 
 ## Execução
